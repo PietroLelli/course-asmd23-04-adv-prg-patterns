@@ -1,6 +1,5 @@
 package scala.u04.task2
 
-
 /*
 type:
   Sequence[A]
@@ -39,12 +38,12 @@ object Sequences:
     def concat[A](s1: Sequence[A], s2: Sequence[A]): Sequence[A]
     def filter[A](sequence: Sequence[A], predicate: A => Boolean): Sequence[A]
     def flatMap[A, B](sequence: Sequence[A], mapper: A => Sequence[B]): Sequence[B]
-
-
+  
   object BasicSequenceADT extends SequenceADT:
     private enum SequenceImpl[A]:
       case Cons(a: A, t: Sequence[A])
       case Nil()
+      
     import SequenceImpl.*
 
     opaque type Sequence[A] = SequenceImpl[A]

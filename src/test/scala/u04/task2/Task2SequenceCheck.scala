@@ -2,11 +2,9 @@ package scala.u04.task2
 
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen, Properties}
-import scala.u04.task2.Sequences.SequenceADT
 
 object Task2SequenceCheck extends Properties("Sequence"):
-  import scala.u04.task2.Sequences.BasicSequenceADT
-  import scala.u04.task2.Sequences.ScalaListSequenceADT
+  import scala.u04.task2.Sequences.*
   sequenceOps(BasicSequenceADT)
   sequenceOps(ScalaListSequenceADT)
 

@@ -1,9 +1,8 @@
-package u04.datastructures
+package scala.u04.datastructures
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
-
-import Sequences.*
+import u04.datastructures.Sequences.*
 import Sequence.*
 
 class SequenceTest extends AnyFunSuite:

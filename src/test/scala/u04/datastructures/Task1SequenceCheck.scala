@@ -13,6 +13,10 @@ object Task1SequenceCheck extends Properties("Sequence"):
   
   override def overrideParameters(p: Parameters): Parameters =
     p.withMinSuccessfulTests(50)
+      .withMaxDiscardRatio(5f)
+      .withMinSize(10)
+      .withMaxSize(100)
+      .withWorkers(4)
   
   property("of is a correct factory") =
     forAll(smallInt(), arbitrary[String]): (i, s) =>

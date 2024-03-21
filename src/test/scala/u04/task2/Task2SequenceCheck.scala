@@ -53,7 +53,7 @@ object Task2SequenceCheck extends Properties("Sequence"):
         s match
           case nil => foldLeft(s, z, op) == z
           //case (cons(h, t)) => foldLeft(s, z, op) == foldLeft(t, op(h), op)
-          
+
 /*    property("reduce axiom") =
       forAll(sequenceGen(), operatorGen()): (s, op) =>
         s match

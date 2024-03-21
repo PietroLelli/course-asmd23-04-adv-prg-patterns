@@ -15,7 +15,7 @@ operations :
 
 axioms :
   filter(nil, f) = nil
-  filter(cons(h,t),f)) = cons(f(h), filter(t, f))
+  filter(cons(h,t),f)) = if f(h) => Cons(h, filter(t, f)) else filter(t, f)
 
   concat(s1, nil) = s1
   concat(nil, s2) = s2
@@ -26,6 +26,12 @@ axioms :
 
   flatMap(nil, f) = nil
   flatMap(cons(h, t), f) = concat(f(h), flatMap(t, f))
+
+  foldLeft(nil, z, _) = z
+  foldLeft(cons(h, t), z, op) = fold(t, op(z, h), op)
+
+  reduce(nil, _) = nil
+  reduce(cons(h, t), op) = foldLeft(t, op(h), op)
  */
 
 object Sequences:
@@ -38,6 +44,8 @@ object Sequences:
     def concat[A](s1: Sequence[A], s2: Sequence[A]): Sequence[A]
     def filter[A](sequence: Sequence[A], predicate: A => Boolean): Sequence[A]
     def flatMap[A, B](sequence: Sequence[A], mapper: A => Sequence[B]): Sequence[B]
+    def foldLeft[A, B](sequence: Sequence[A], z: B, op: (B, A) => B): B
+    def reduce[A](sequence: Sequence[A], op: (A, A) => A): A
   
   object BasicSequenceADT extends SequenceADT:
     private enum SequenceImpl[A]:
@@ -69,6 +77,15 @@ object Sequences:
       case Cons(h, t) => concat(mapper(h), flatMap(t, mapper))
       case _ => Nil()
 
+    override def foldLeft[A, B](sequence: Sequence[A], z: B, op: (B, A) => B): B = sequence match
+      case Cons(h, t) => foldLeft(t, op(z, h), op)
+      case Nil() => z
+
+    override def reduce[A](sequence: Sequence[A], op: (A, A) => A): A = sequence match
+      case Cons(h, t) => foldLeft(t, h, op)
+      case Nil() => throw UnsupportedOperationException()
+
+
   object ScalaListSequenceADT extends SequenceADT:
     opaque type Sequence[A] = List[A]
 
@@ -83,3 +100,7 @@ object Sequences:
     override def filter[A](sequence: Sequence[A], predicate: A => Boolean): Sequence[A] = sequence.filter(predicate)
 
     override def flatMap[A, B](sequence: Sequence[A], mapper: A => Sequence[B]): Sequence[B] = sequence.flatMap(mapper)
+
+    override def foldLeft[A, B](sequence: Sequence[A], z: B, op: (B, A) => B): B = sequence.foldLeft(z)(op)
+
+    override def reduce[A](sequence: Sequence[A], op: (A, A) => A): A = sequence.reduce(op)

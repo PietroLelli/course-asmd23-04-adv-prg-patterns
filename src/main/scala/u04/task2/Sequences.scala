@@ -1,5 +1,6 @@
 package scala.u04.task2
 
+import scala.annotation.tailrec
 /*
 type:
   Sequence[A]
@@ -12,6 +13,9 @@ operations :
   filter[A]: Sequence[A] x (A => Boolean) => Sequence[A]
   map[A,B]: Sequence[A] x (A => B) => Sequence[B]
   flatMap[A,B]: Sequence[A] x (A => Sequence[B]) => Sequence[B]
+  concat[A]: Sequence[A] x Sequence[A] => Sequence[A]
+  foldLeft[A, B]: Sequence[A] x B x ((B, A) => B) => B
+  reduce[A]: Sequence[A], ((A, A) => A) => Option[A]
 
 axioms :
   filter(nil, f) = nil
@@ -38,6 +42,8 @@ object Sequences:
 
   trait SequenceADT:
     type Sequence[A]
+
+    def getCons[A](s: Sequence[A]): Option[(A, Sequence[A])]
     def cons[A](h: A, t: Sequence[A]): Sequence[A]
     def nil[A](): Sequence[A]
     def map[A, B](sequence: Sequence[A], mapper: A=>B): Sequence[B]
@@ -45,16 +51,20 @@ object Sequences:
     def filter[A](sequence: Sequence[A], predicate: A => Boolean): Sequence[A]
     def flatMap[A, B](sequence: Sequence[A], mapper: A => Sequence[B]): Sequence[B]
     def foldLeft[A, B](sequence: Sequence[A], z: B, op: (B, A) => B): B
-    def reduce[A](sequence: Sequence[A], op: (A, A) => A): A
-  
+    def reduce[A](sequence: Sequence[A], op: (A, A) => A): Option[A]
+
   object BasicSequenceADT extends SequenceADT:
     private enum SequenceImpl[A]:
       case Cons(a: A, t: Sequence[A])
       case Nil()
-      
+
     import SequenceImpl.*
 
     opaque type Sequence[A] = SequenceImpl[A]
+
+    override def getCons[A](s: Sequence[A]): Option[(A, Sequence[A])] = s match
+      case Cons(h, t) => Some((h, t))
+      case _ => None
 
     override def cons[A](h: A, t: Sequence[A]): Sequence[A] = Cons(h, t)
 
@@ -70,28 +80,32 @@ object Sequences:
       case (Cons(h, t), s2) => Cons(h, concat(t, s2))
 
     override def filter[A](sequence: Sequence[A], predicate: A => Boolean): Sequence[A] = sequence match
-      case Cons(h, t) if predicate(h) => Cons(h, filter(t, predicate))
+      case Cons(h, t) => if predicate(h) then Cons(h, filter(t, predicate)) else filter(t, predicate)
       case _ => Nil()
       
     override def flatMap[A, B](sequence: Sequence[A], mapper: A => Sequence[B]): Sequence[B] = sequence match
       case Cons(h, t) => concat(mapper(h), flatMap(t, mapper))
       case _ => Nil()
 
+    @tailrec
     override def foldLeft[A, B](sequence: Sequence[A], z: B, op: (B, A) => B): B = sequence match
       case Cons(h, t) => foldLeft(t, op(z, h), op)
       case Nil() => z
 
-    override def reduce[A](sequence: Sequence[A], op: (A, A) => A): A = sequence match
-      case Cons(h, t) => foldLeft(t, h, op)
-      case Nil() => throw UnsupportedOperationException()
-
-
+    override def reduce[A](sequence: Sequence[A], op: (A, A) => A): Option[A] = sequence match
+      case Cons(h, t) => Some(foldLeft(t, h, op))
+      case Nil() => None
+  
   object ScalaListSequenceADT extends SequenceADT:
     opaque type Sequence[A] = List[A]
 
     override def cons[A](h: A, t: Sequence[A]): Sequence[A] = h :: t
 
     override def nil[A](): Sequence[A] = List()
+
+    override def getCons[A](s: Sequence[A]): Option[(A, Sequence[A])] = s match
+      case h :: t => Some((h, t))
+      case _ => None
 
     override def map[A, B](sequence: Sequence[A], mapper: A => B): Sequence[B] = sequence.map(mapper)
 
@@ -103,4 +117,4 @@ object Sequences:
 
     override def foldLeft[A, B](sequence: Sequence[A], z: B, op: (B, A) => B): B = sequence.foldLeft(z)(op)
 
-    override def reduce[A](sequence: Sequence[A], op: (A, A) => A): A = sequence.reduce(op)
+    override def reduce[A](sequence: Sequence[A], op: (A, A) => A): Option[A] = sequence.reduceOption(op)

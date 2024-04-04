@@ -1,7 +1,7 @@
 package scala.u04.task2
 
 import org.scalacheck.Prop.forAll
-import org.scalacheck.{Arbitrary, Gen, Properties}
+import org.scalacheck.{Gen, Properties}
 
 object Task2SequenceCheck extends Properties("Sequence"):
   import scala.u04.task2.Sequences.*
@@ -13,50 +13,54 @@ object Task2SequenceCheck extends Properties("Sequence"):
 
     def sequenceGen(): Gen[Sequence[Int]] = for
       b <- Gen.prob(0.7)
-      size <- Gen.choose(0, 0) // Use the Gen.choose method to determine the size of the sequence
-      elements <- Gen.listOfN(size, Gen.choose(0, 100)) // Generate a list of random integers
-    yield if b then nil() else elements.foldRight[Sequence[Int]](nil())((e, acc) => cons(e, acc)) // Convert the list to a sequence
+      size <- Gen.choose(0, 100)
+      elements <- Gen.listOfN(size, Gen.choose(0, 100))
+    yield if b then nil() else elements.foldRight[Sequence[Int]](nil())((e, acc) => cons(e, acc))
 
     def intGen(): Gen[Int] = Gen.choose(0, 100)
+
     def mapperGen(): Gen[Int => Int] = Gen.oneOf[Int => Int](_ + 1, _ * 2, x => x * x)
-    def mapperFlatMapGen(): Gen[Int => Sequence[Int]] = Gen.oneOf[Int => Sequence[Int]](x => cons(x, cons(x, nil())), x => cons(x + 1, nil()))
-    def predicateGen(): Gen[Int => Boolean] = Gen.oneOf[Int => Boolean](_ % 2 == 0, _ > 10, _ < 10)
-    def operatorGen(): Gen[(Int, Int) => Int] = Gen.oneOf[(Int, Int) => Int]((x, y) => x+y, (x, y) => x-y, (x, y) =>x*y)
+
+    def filterGen(): Gen[Int => Boolean] = Gen.oneOf[Int => Boolean](_ % 2 == 0, _ % 2 != 0, _ >= 10)
+
+    def flatMapGen(): Gen[Int => Sequence[String]] = Gen.oneOf[Int => Sequence[String]](_ => cons("a", cons("b", nil())), _ => cons("dummy", nil()), _ => cons("x", cons("z", cons("c", nil()))))
+
+    def operatorGen(): Gen[(Int, Int) => Int] = Gen.oneOf[(Int, Int) => Int]((x, y) => x + y, (x, y) => x - y, (x, y) => x * y)
+
+    property("filter axiom") =
+      forAll(sequenceGen(), filterGen()): (s, f) =>
+        (getCons(s), f) match
+          case (None, _) => filter(nil(), f) == nil()
+          case (Some((h, t)), f) => f(h) && filter(s, f) == cons(h, filter(t, f)) || (!f(h) && filter(s, f) == filter(t, f))
 
     property("map axiom") =
       forAll(sequenceGen(), mapperGen()): (s, m) =>
-        (s, m) match
-          case (nil, _) => map(s, m) == nil
-          //case (cons(h, t), m) => map(s, m) == cons(m(h), map(t, m))
+        (getCons(s), m) match
+          case(None, _) => map(s, m) == nil()
+          case(Some((h,t)), m) => map(s, m) == cons(m(h), map(t, m))
 
     property("concat axiom") =
       forAll(sequenceGen(), sequenceGen()): (s1, s2) =>
-        (s1, s2) match
-          case (nil, s2) => concat(s1, s2) == s2
-          case (s1, nil) => concat(s1, s2) == s1
-          //case (s1, s2) => concat(s1, s2) == cons(h, concat(t, s2))
+        (getCons(s1), getCons(s2)) match
+          case (None, None) => concat(s1, s2) == nil()
+          case (Some((h1, t1)), None) => concat(s1, s2) == cons(h1, t1)
+          case (None, Some((h2, t2))) => concat(s1, s2) == cons(h2, t2)
+          case (Some((h1, t1)), Some((h2, t2))) => concat(s1,s2) == cons(h1, concat(t1, s2))
 
-    property("filter axiom") =
-      forAll(sequenceGen(), predicateGen()): (s, p) =>
-        (s, p) match
-          case (nil, _) => filter(s, p) == nil
-          //case (cons(h, t), p) => (p(h) && filter(s,p) == cons(h, filter(t, p)) || !p(h) && filter(s, p) == filter(t, p))
-
-    property("flatMap axiom") =
-      forAll(sequenceGen(), mapperFlatMapGen()): (s, m) =>
-        (s, m) match
-          case (nil, _) => flatMap(s, m) == nil
-          //case (cons(h, t), m) => flatMap(s, m) == concat(m(h), flatMap(t, m))
+    property("flatmap axiom") =
+      forAll(sequenceGen(), flatMapGen()): (s, f) =>
+        (getCons(s), f) match
+          case (None, _) => flatMap(s, f) == nil()
+          case (Some((h, t)), f) => flatMap(s, f) == concat(f(h), flatMap(t, f))
 
     property("foldLeft axiom") =
       forAll(sequenceGen(), intGen(), operatorGen()): (s, z, op) =>
-        s match
-          case nil => foldLeft(s, z, op) == z
-          //case (cons(h, t)) => foldLeft(s, z, op) == foldLeft(t, op(h), op)
+        (getCons(s), z, op) match
+          case (None, z, _) => foldLeft(s, z, op) == z
+          case (Some((h, t)), z, op) => foldLeft(s, z, op) == foldLeft(t, op(z, h), op)
 
-/*    property("reduce axiom") =
+    property("reduce axiom") =
       forAll(sequenceGen(), operatorGen()): (s, op) =>
-        s match
-          case nil =>
-          //case (cons(h, t)) => reduce(s, op) == foldLeft(t, h, op)
-*/
+        (getCons(s), op) match
+          case (Some(h, t), op) => reduce(s, op).contains(foldLeft(t, h, op))
+          case (None, _) => reduce(s, op).isEmpty

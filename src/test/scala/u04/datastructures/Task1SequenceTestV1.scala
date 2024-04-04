@@ -6,10 +6,10 @@ import u04.datastructures.Sequences.Sequence
 import u04.datastructures.Sequences.Sequence.*
 import scala.util.Random
 
-class Task1SequenceTest extends AnyFunSuite:
+class Task1SequenceTestV1 extends AnyFunSuite:
   for(i <- 1 to 100)
     val randomInt = Random.nextInt(100)
-    val randomString = Random.nextString(1)
+    val randomString = Random.nextString(10)
     test("test n." + i) {
       Sequence.of(randomInt, randomString) shouldBe Sequence.of(randomInt, randomString).filter(e => e == randomString)
       Sequence.of(randomInt, randomString).filter(e => e != randomString) shouldBe Nil()

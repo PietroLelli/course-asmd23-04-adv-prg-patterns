@@ -6,7 +6,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import u04.datastructures.Sequences.*
 import Sequence.*
 import org.scalatest.matchers.should.Matchers.shouldBe
-
 import scala.util.Random
 
 class Task1SequenceTestV2 extends AnyFunSuite with BeforeAndAfterAll:
@@ -20,7 +19,6 @@ class Task1SequenceTestV2 extends AnyFunSuite with BeforeAndAfterAll:
       val randomInt = Random.nextInt(100)
       val randomString = Random.nextString(stringLength)
       randomValues = randomValues :+ (randomInt, randomString)
-      //randomValues :+ (randomInt, randomString)
 
   test("of is a correct factory"):
     forAll(randomValues): (i, s) =>
